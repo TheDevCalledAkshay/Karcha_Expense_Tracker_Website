@@ -48,6 +48,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button type="button" class="account-badge" id="account-badge" title="Account">
+          <span class="ab-avatar">👤</span><span id="account-badge-name"></span>
+        </button>
         <p class="privacy-note">
           <span class="dot"></span> All data stays on this device
         </p>
@@ -185,6 +188,22 @@
     <!-- Settings -->
     <div id="tab-settings" hidden>
       <section class="card">
+        <h2>Account</h2>
+        <div class="set-row">
+          <span>Signed in as</span>
+          <b id="account-name">—</b>
+        </div>
+        <div class="set-row">
+          <span>Use another account on this device</span>
+          <button type="button" class="btn-soft" id="switch-account">Switch account</button>
+        </div>
+        <div class="set-row">
+          <span>Remove this account and its data</span>
+          <button type="button" class="btn-danger" id="delete-account">Delete account</button>
+        </div>
+      </section>
+
+      <section class="card">
         <h2>Appearance</h2>
         <div class="set-row">
           <span>Theme</span>
@@ -239,6 +258,45 @@
 
     <footer class="footer">Karcha · your data never leaves your browser</footer>
   </main>
+
+  <!-- Account lock screen -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <div class="brand-icon auth-brand" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 26 L38 14 c2-1 4 0 5 2 l1 2 -20 10 z" fill="#6f8b72"/>
+          <path d="M18 34 L44 22 c2-1 4 0 5 2 l1 2 -22 10 z" fill="#8ba491"/>
+          <rect x="10" y="28" width="40" height="24" rx="7" fill="#fffefb"/>
+          <rect x="36" y="37" width="10" height="5" rx="2.5" fill="#22332c"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">Who's tracking?</h1>
+      <p class="auth-sub">Pick an account, or create a new one. Everything stays on this device.</p>
+
+      <div id="auth-choose">
+        <div class="auth-list" id="auth-list"></div>
+        <div class="auth-divider" id="auth-divider">or create account</div>
+        <form class="auth-form" id="register-form">
+          <input type="text" id="new-account-name" placeholder="Your Name" maxlength="24" required />
+          <div class="pin-row">
+            <input type="password" id="new-account-pin" placeholder="PIN" inputmode="numeric" maxlength="4" />
+            <input type="password" id="new-account-pin2" placeholder="Repeat PIN" inputmode="numeric" maxlength="4" />
+          </div>
+          <button class="btn-primary" type="submit">Create account</button>
+        </form>
+      </div>
+
+      <div class="pin-verify" id="pin-verify" hidden>
+        <p>Enter the PIN for <b id="pin-name"></b></p>
+        <input class="pin-input" id="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" />
+        <div class="pin-err" id="pin-err" hidden>Wrong PIN — try again.</div>
+        <div class="pin-actions">
+          <button type="button" class="btn-soft" id="pin-cancel">Back</button>
+          <button type="button" class="btn-primary" id="pin-ok">Unlock</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
   <script>

@@ -2,7 +2,6 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'karcha.expenses';
   const THEME_KEY = 'karcha.theme';
 
   const CATEGORIES = {
@@ -26,10 +25,6 @@
 
   const CURRENCIES = ['₹', '$', '€', '£', '¥'];
   let currency = '₹';
-  try {
-    const savedCurrency = localStorage.getItem('karcha.currency');
-    if (CURRENCIES.includes(savedCurrency)) currency = savedCurrency;
-  } catch {}
 
   const form = document.getElementById('expense-form');
   const listEl = document.getElementById('expense-list');
@@ -37,7 +32,8 @@
   const clearBtn = document.getElementById('clear-all');
   const dateInput = document.getElementById('date');
 
-  let expenses = load();
+  let expenses = [];
+  let accountId = null;
   let editingId = null;
   let currentType = 'expense';
   let currentPeriod = 'month';
@@ -52,8 +48,9 @@
   const typeToggle = document.getElementById('type-toggle');
 
   function load() {
+    if (!accountId) return [];
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem('karcha.expenses.' + accountId);
       const arr = raw ? JSON.parse(raw) : [];
       // migrate older entries: drop notes, default category/type
       return arr.map((e) => {
@@ -67,7 +64,8 @@
   }
 
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+    if (!accountId) return;
+    localStorage.setItem('karcha.expenses.' + accountId, JSON.stringify(expenses));
   }
 
   function formatMoney(n) {
@@ -498,7 +496,6 @@
 
   /* ---------- Settings ---------- */
 
-  const CURRENCY_KEY = 'karcha.currency';
   const currencySelect = document.getElementById('currency-select');
   const amountLabel = document.getElementById('amount-label');
 
@@ -509,7 +506,7 @@
 
   currencySelect.addEventListener('change', () => {
     currency = currencySelect.value;
-    try { localStorage.setItem(CURRENCY_KEY, currency); } catch {}
+    try { localStorage.setItem('karcha.currency.' + accountId, currency); } catch {}
     applyCurrency();
     render();
   });
@@ -600,6 +597,178 @@
 
   document.getElementById('wipe-data').addEventListener('click', clearAll);
 
+  /* ---------- Accounts & Auth ---------- */
+
+  const ACCOUNTS_KEY = 'karcha.accounts';
+  const SESSION_KEY = 'karcha.session';
+  const authScreen = document.getElementById('auth-screen');
+  let pendingAccountId = null;
+
+  function hashPin(pin, salt) {
+    // Local-only deterrent: a light hash so the PIN isn't stored in plain text.
+    let h = 5381;
+    const s = String(salt) + '::' + String(pin);
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return 'djb2:' + h.toString(16);
+  }
+
+  function loadAccounts() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveAccounts(accounts) {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+
+  function startApp(id) {
+    accountId = id;
+    try { localStorage.setItem(SESSION_KEY, id); } catch {}
+    expenses = load();
+    try {
+      const c = localStorage.getItem('karcha.currency.' + id);
+      currency = CURRENCIES.includes(c) ? c : '₹';
+    } catch {
+      currency = '₹';
+    }
+    const acc = loadAccounts().find((a) => a.id === id);
+    document.getElementById('account-name').textContent = acc ? acc.name : '—';
+    document.getElementById('account-badge-name').textContent = acc ? acc.name : '';
+    showPin(null);
+    cancelEdit();
+    authScreen.hidden = true;
+    dateInput.value = todayISO();
+    render();
+  }
+
+  function logoutToAuth() {
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+    accountId = null;
+    expenses = [];
+    cancelEdit();
+    renderAuthList();
+    authScreen.hidden = false;
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- Auth (cont) ---------- */
+
+  function renderAuthList() {
+    const list = document.getElementById('auth-list');
+    const divider = document.getElementById('auth-divider');
+    if (divider) divider.style.display = loadAccounts().length ? '' : 'none';
+    list.innerHTML = '';
+    for (const a of loadAccounts()) {
+      const row = document.createElement('div');
+      row.className = 'auth-item';
+      row.innerHTML =
+        '<button type="button" class="auth-main">' +
+          '<span class="avatar"></span>' +
+          '<span class="a-name"></span>' +
+          (a.pinHash ? '<span class="a-lock" title="PIN protected">🔒</span>' : '') +
+        '</button>' +
+        '<button type="button" class="auth-del" title="Delete account">✕</button>';
+      row.querySelector('.avatar').textContent = (a.name[0] || '?').toUpperCase();
+      row.querySelector('.a-name').textContent = a.name;
+      row.querySelector('.auth-main').addEventListener('click', () => attemptLogin(a));
+      row.querySelector('.auth-del').addEventListener('click', () => {
+        if (!confirm('Delete "' + a.name + '" and all of its data? This cannot be undone.')) return;
+        localStorage.removeItem('karcha.expenses.' + a.id);
+        localStorage.removeItem('karcha.currency.' + a.id);
+        saveAccounts(loadAccounts().filter((x) => x.id !== a.id));
+        renderAuthList();
+      });
+      list.appendChild(row);
+    }
+  }
+
+  function attemptLogin(acc) {
+    if (acc.pinHash) showPin(acc);
+    else startApp(acc.id);
+  }
+
+  function showPin(acc) {
+    const choose = document.getElementById('auth-choose');
+    const verify = document.getElementById('pin-verify');
+    if (acc) {
+      pendingAccountId = acc.id;
+      document.getElementById('pin-name').textContent = acc.name;
+      choose.hidden = true;
+      verify.hidden = false;
+      const pi = document.getElementById('pin-input');
+      pi.value = '';
+      document.getElementById('pin-err').hidden = true;
+      pi.focus();
+    } else {
+      pendingAccountId = null;
+      choose.hidden = false;
+      verify.hidden = true;
+    }
+  }
+
+  function tryPin() {
+    const acc = loadAccounts().find((a) => a.id === pendingAccountId);
+    const input = document.getElementById('pin-input');
+    if (acc && acc.pinHash && hashPin(input.value.trim(), acc.id) === acc.pinHash) {
+      showPin(null);
+      startApp(acc.id);
+    } else {
+      document.getElementById('pin-err').hidden = false;
+      input.value = '';
+      input.focus();
+      const card = document.querySelector('.auth-card');
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+    }
+  }
+
+  document.getElementById('pin-ok').addEventListener('click', tryPin);
+  document.getElementById('pin-input').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') tryPin();
+  });
+  document.getElementById('pin-cancel').addEventListener('click', () => showPin(null));
+
+  document.getElementById('register-form').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = document.getElementById('new-account-name').value.trim();
+    if (!name) return;
+    const p1 = document.getElementById('new-account-pin').value.trim();
+    const p2 = document.getElementById('new-account-pin2').value.trim();
+    if ((p1 || p2) && (!/^\d{4}$/.test(p1) || p1 !== p2)) {
+      alert('PIN must be exactly 4 digits and both fields must match.');
+      return;
+    }
+    const id = uid();
+    const accounts = loadAccounts();
+    accounts.push({ id, name, pinHash: p1 ? hashPin(p1, id) : null, createdAt: new Date().toISOString() });
+    saveAccounts(accounts);
+    document.getElementById('new-account-name').value = '';
+    document.getElementById('new-account-pin').value = '';
+    document.getElementById('new-account-pin2').value = '';
+    startApp(id);
+  });
+
+  document.getElementById('switch-account').addEventListener('click', logoutToAuth);
+
+  document.getElementById('delete-account').addEventListener('click', () => {
+    const acc = loadAccounts().find((a) => a.id === accountId);
+    if (!acc) return;
+    if (!confirm('Delete "' + acc.name + '" and ALL of its data? This cannot be undone.')) return;
+    localStorage.removeItem('karcha.expenses.' + accountId);
+    localStorage.removeItem('karcha.currency.' + accountId);
+    saveAccounts(loadAccounts().filter((x) => x.id !== accountId));
+    logoutToAuth();
+  });
+
+  document.getElementById('account-badge').addEventListener('click', () => {
+    document.querySelector('.tab-btn[data-tab="settings"]').click();
+  });
+
   /* ---------- Init ---------- */
 
   // build category chip grid
@@ -614,9 +783,13 @@
     catPop.appendChild(chip);
   }
   setCategory(DEFAULT_CATEGORY.expense);
-  applyCurrency();
   reflectTheme();
+  renderAuthList();
 
-  dateInput.value = todayISO();
-  render();
+  const savedSession = (() => {
+    try { return localStorage.getItem(SESSION_KEY); } catch { return null; }
+  })();
+  const currentAccount = savedSession && loadAccounts().find((a) => a.id === savedSession);
+  if (currentAccount) startApp(currentAccount.id);
+  else authScreen.hidden = false;
 })();

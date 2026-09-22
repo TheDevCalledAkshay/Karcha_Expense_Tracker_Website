@@ -639,3 +639,129 @@ body {
   .set-row { flex-wrap: wrap; }
   .seg button { padding: 7px 10px; }
 }
+
+/* ---------- Account badge (header) ---------- */
+.account-badge {
+  font: inherit;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s, background 0.15s;
+}
+.account-badge:hover { border-color: var(--accent); background: var(--accent-soft); }
+.account-badge .ab-avatar { font-size: 13px; }
+#account-badge-name:empty { display: none; }
+
+/* ---------- Account lock screen ---------- */
+.auth-screen {
+  position: fixed; inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.auth-screen[hidden] { display: none; }
+
+.auth-card {
+  width: 100%; max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  text-align: center;
+}
+.auth-brand { margin: 0 auto 14px; }
+.auth-title { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+.auth-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+.auth-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.auth-item { display: flex; gap: 8px; }
+.auth-main {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  font: inherit; text-align: left;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+.auth-main:hover { border-color: var(--accent); background: var(--accent-soft); }
+.avatar {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3d5245, #22332c);
+  color: #fffefb;
+  font-weight: 800; font-size: 15px;
+  display: grid; place-items: center;
+}
+.a-name { flex: 1; font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a-lock { font-size: 13px; }
+.auth-del {
+  width: 38px; flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.auth-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+
+.auth-divider {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px;
+  margin: 16px 0 12px;
+}
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.auth-form { display: flex; flex-direction: column; gap: 10px; }
+.auth-form input, .pin-input {
+  font: inherit;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.auth-form input:focus, .pin-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pin-row { display: flex; gap: 10px; }
+.auth-form .btn-primary { margin-top: 2px; }
+
+.pin-verify p { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.pin-verify p b { color: var(--text); }
+.pin-input {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 12px;
+  padding: 10px 0 10px 12px;
+}
+.pin-err { color: var(--danger); font-size: 12px; font-weight: 600; margin-top: 8px; }
+.pin-actions { display: flex; gap: 8px; margin-top: 12px; }
+.pin-actions .btn-soft, .pin-actions .btn-primary { flex: 1; margin-top: 0; }
+.shake { animation: shake 0.4s ease; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}

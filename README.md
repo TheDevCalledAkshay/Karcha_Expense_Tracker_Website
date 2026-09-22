@@ -1,40 +1,45 @@
-# Karcha 💸
+# Karcha
 
-A local-first expense tracker — static site, no server, no accounts. All data lives in your browser (localStorage). Installable PWA: works offline on phone and laptop.
+**A modern, local-first expense tracker built as a Progressive Web App.**
 
-## Run locally
+Karcha is a lightweight personal expense tracker designed to help you record, manage, and understand your spending without requiring an account or a backend.
 
-Open `index.html` in a browser, or serve it (needed for full PWA/offline features):
+All transaction data is stored locally in your browser, keeping your financial information on your device.
 
-```
-npx serve .
-```
+**WEBSITE:** https://thedevcalledakshay.github.io/Karcha_Expense_Tracker_Website/
 
-## Deploy to GitHub Pages
+## Features
 
-1. Create a repository on GitHub (e.g. `karcha`).
-2. Push the contents of this folder to the `main` branch:
-   ```
-   git init
-   git add .
-   git commit -m "Karcha"
-   git branch -M main
-   git remote add origin https://github.com/<username>/karcha.git
-   git push -u origin main
-   ```
-3. In the repo: **Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)` → Save**.
-4. Your app is live at `https://<username>.github.io/karcha/`.
-   - **Phone:** open in Chrome/Safari → menu → *Add to Home Screen / Install app*.
-   - **Laptop:** open in Chrome/Edge → install icon in the address bar.
-   - Works fully offline once installed. Data is per-device/per-browser (clearing site data wipes it — use Settings → Export backup first).
+* **Expense & Income Tracking** — Record expenses and income with descriptions, amounts, dates, and categories.
+* **Dashboard** — View spending, income, and balance at a glance.
+* **Analytics** — Visualize spending by category and track monthly trends.
+* **Quick Facts** — Get useful insights into your spending.
+* **Multiple Currencies** — Support for INR, USD, EUR, GBP, and JPY.
+* **Local-First Storage** — Your financial data stays in your browser.
+* **Data Export & Import** — Export your data as JSON or CSV and restore it when needed.
+* **Themes** — Light, dark, and system theme options.
+* **Offline Support** — Installable as a PWA with offline functionality.
+* **Responsive Design** — Designed for both desktop and mobile.
 
-## Updating the app
+## Privacy
 
-If you change `index.html` / `style.css` / `app.js`, bump `CACHE_NAME` in `sw.js` (e.g. `karcha-v1` → `karcha-v2`) so installed clients pick up the new version on their next visit.
+Karcha follows a **local-first approach**.
 
-## Files
+Your transaction data is stored locally in your browser and is not sent to a Karcha server.
 
-- `index.html` / `style.css` / `app.js` — the app
-- `manifest.webmanifest` — PWA identity (name, icons, colors)
-- `sw.js` — service worker (offline cache)
-- `favicon.svg`, `icon-*.png`, `maskable-*.png`, `apple-touch-icon.png` — icons
+> **Your financial data stays on your device.**
+
+## Tech Stack
+
+* HTML
+* CSS
+* JavaScript
+* Web Storage API
+* Service Workers
+* Progressive Web App (PWA)
+
+## Author
+
+**Akshay Chand S.**
+
+B.Tech CSE Student

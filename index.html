@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Karcha — Expense Tracker</title>
+  <script>
+    /* Apply saved theme before first paint to avoid a flash */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('karcha.theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Karcha — a local-first expense tracker. All data stays on your device." />
+  <meta name="theme-color" content="#22332c" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Karcha" />
+</head>
+<body>
+  <main class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 26 L38 14 c2-1 4 0 5 2 l1 2 -20 10 z" fill="#6f8b72"/>
+            <path d="M18 34 L44 22 c2-1 4 0 5 2 l1 2 -22 10 z" fill="#8ba491"/>
+            <rect x="10" y="28" width="40" height="24" rx="7" fill="#fffefb"/>
+            <rect x="36" y="37" width="10" height="5" rx="2.5" fill="#22332c"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Karcha</h1>
+          <p class="tagline">Track every rupee, locally.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <p class="privacy-note">
+          <span class="dot"></span> All data stays on this device
+        </p>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="currentColor"/>
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+            <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M18.7 5.3l-1.5 1.5M6.8 17.2l-1.5 1.5"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs" id="tabs" aria-label="Sections">
+      <button type="button" class="tab-btn active" data-tab="dashboard">Overview</button>
+      <button type="button" class="tab-btn" data-tab="analytics">Analytics</button>
+      <button type="button" class="tab-btn" data-tab="settings">Settings</button>
+    </nav>
+
+    <div id="tab-dashboard">
+    <!-- Stats -->
+    <section class="stats-wrap">
+      <div class="stats-head">
+        <label class="period-label" for="period-select">Showing</label>
+        <select id="period-select" class="period-select">
+          <option value="month" selected>This Month</option>
+          <option value="year">This Year</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+      <div class="stats">
+        <div class="stat-card">
+          <span class="stat-label">Spending</span>
+          <span class="stat-value expense" id="stat-spend">₹0.00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Income</span>
+          <span class="stat-value income" id="stat-income">₹0.00</span>
+        </div>
+        <div class="stat-card accent">
+          <span class="stat-label">Balance</span>
+          <span class="stat-value" id="stat-balance">₹0.00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add expense -->
+    <section class="card form-card">
+      <h2 id="form-title">Add Expense</h2>
+      <form id="expense-form">
+        <div class="type-toggle" id="type-toggle" role="group" aria-label="Transaction type">
+          <button type="button" class="type-btn active" data-type="expense">− Expense</button>
+          <button type="button" class="type-btn income" data-type="income">+ Income</button>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="description">Description</label>
+            <input type="text" id="description" placeholder="What did you spend on?" required maxlength="80" />
+          </div>
+          <div class="field">
+            <label for="amount" id="amount-label">Amount (₹)</label>
+            <input type="number" id="amount" placeholder="0.00" required min="0.01" step="0.01" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label for="date">Date</label>
+            <input type="date" id="date" required />
+          </div>
+          <div class="field field-wide cat-field">
+            <label>Category</label>
+            <button type="button" class="cat-select" id="cat-select" aria-haspopup="grid">
+              <span id="cat-select-label">🍽️ Food &amp; Dining</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="cat-pop" id="cat-pop" hidden></div>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn">
+          <span id="submit-label">Add Expense</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Expense list -->
+    <section class="card list-card">
+      <div class="list-header">
+        <h2>Expenses</h2>
+        <button class="btn-ghost" id="clear-all" type="button">Clear all</button>
+      </div>
+      <ul class="expense-list" id="expense-list"></ul>
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🧾</div>
+        <p class="empty-title">No expenses yet</p>
+        <p class="empty-sub">Add your first expense above to get started.</p>
+      </div>
+    </section>
+    </div><!-- /tab-dashboard -->
+
+    <!-- Analytics -->
+    <div id="tab-analytics" hidden>
+      <section class="card">
+        <div class="list-header">
+          <h2>Spending by Category</h2>
+          <select id="an-period" class="period-select">
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div class="catbreak">
+          <svg class="donut" id="cat-donut" viewBox="0 0 42 42" role="img" aria-label="Spending by category"></svg>
+          <ul class="cat-legend" id="cat-legend"></ul>
+        </div>
+        <div class="an-empty" id="an-empty" hidden>No spending recorded in this period yet.</div>
+      </section>
+
+      <section class="card">
+        <div class="list-header"><h2>Last 6 Months</h2></div>
+        <div class="trend" id="trend"></div>
+        <div class="trend-legend">
+          <span><i class="swatch inc"></i>Income</span>
+          <span><i class="swatch exp"></i>Spending</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="list-header"><h2>Quick Facts</h2></div>
+        <div class="facts" id="facts"></div>
+      </section>
+    </div>
+
+    <!-- Settings -->
+    <div id="tab-settings" hidden>
+      <section class="card">
+        <h2>Appearance</h2>
+        <div class="set-row">
+          <span>Theme</span>
+          <div class="seg" id="theme-seg">
+            <button type="button" data-mode="light">Light</button>
+            <button type="button" data-mode="dark">Dark</button>
+            <button type="button" data-mode="system">System</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Currency</h2>
+        <div class="set-row">
+          <span>Used everywhere in the app</span>
+          <select id="currency-select" class="period-select">
+            <option value="₹" selected>₹ Indian Rupee</option>
+            <option value="$">$ US Dollar</option>
+            <option value="€">€ Euro</option>
+            <option value="£">£ British Pound</option>
+            <option value="¥">¥ Japanese Yen</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Your Data</h2>
+        <div class="set-row">
+          <span>Backup file (JSON)</span>
+          <div class="set-actions">
+            <button type="button" class="btn-soft" id="export-json">Export</button>
+            <button type="button" class="btn-soft" id="import-btn">Import</button>
+            <input type="file" id="import-json" accept=".json,application/json" hidden />
+          </div>
+        </div>
+        <div class="set-row">
+          <span>Spreadsheet (CSV)</span>
+          <div class="set-actions">
+            <button type="button" class="btn-soft" id="export-csv">Export CSV</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Danger Zone</h2>
+        <div class="set-row">
+          <span>Delete every transaction permanently</span>
+          <button type="button" class="btn-danger" id="wipe-data">Delete All</button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footer">Karcha · your data never leaves your browser</footer>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    // Register the service worker so Karcha is installable and works offline.
+    // Service workers need http(s) — skipped when opening index.html directly from disk.
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

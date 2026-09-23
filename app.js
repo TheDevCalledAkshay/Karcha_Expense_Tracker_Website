@@ -351,9 +351,10 @@
 
   /* ---------- Analytics ---------- */
 
-  // High-contrast donut palette: light/dark segments alternate so every slice
-  // is distinguishable by brightness even for color-vision-deficient users.
-  const PALETTE = ['#f7d377', '#a83226', '#b2e3a8', '#2b64b8', '#f9bcd4', '#5f3d9e', '#d1dc8c', '#0d5252', '#f8b173', '#333e45'];
+  // Donut palette: muted dusty earthy tones, but with *varied hues* (not
+  // different shades of one colour) so every slice is distinguishable —
+  // sequenced with brightness steps for elderly / color-vision readers.
+        const PALETTE = ["#b5654d","#dde3cf","#5b7263","#c4899b","#e0b64f","#8a9fb8","#4a5d6e","#a4b494","#7f97b5","#e8cfa8"];
   const donutEl = document.getElementById('cat-donut');
   const legendEl = document.getElementById('cat-legend');
   const anEmpty = document.getElementById('an-empty');

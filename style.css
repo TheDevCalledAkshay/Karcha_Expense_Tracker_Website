@@ -435,6 +435,8 @@ body {
   padding: 16px;
   display: flex; flex-direction: column; gap: 6px;
   box-shadow: var(--shadow);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .stat-card.accent {
@@ -445,7 +447,7 @@ body {
 .stat-card.accent .stat-label { color: rgba(255, 255, 255, 0.8); }
 
 .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
-.stat-value { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-value { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 .stat-value.income { color: var(--income); }
 .stat-value.expense { color: var(--expense); }
 

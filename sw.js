@@ -1,7 +1,7 @@
 /* Karcha service worker — offline-first app shell.
    Bump CACHE_NAME (e.g. karcha-v2) whenever you change app files so
    visitors get the new version. */
-const CACHE_NAME = 'karcha-v1';
+const CACHE_NAME = 'karcha-v3';
 const ASSETS = [
   './',
   './index.html',

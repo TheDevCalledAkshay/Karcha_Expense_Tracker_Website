@@ -351,7 +351,9 @@
 
   /* ---------- Analytics ---------- */
 
-  const PALETTE = ['#3d5245', '#6f8b72', '#8ba491', '#a3bfa8', '#b3564d', '#7f9c8f', '#5b7263', '#c2a97e', '#9c7b6f', '#6d8b9c'];
+  // High-contrast donut palette: light/dark segments alternate so every slice
+  // is distinguishable by brightness even for color-vision-deficient users.
+  const PALETTE = ['#f7d377', '#a83226', '#b2e3a8', '#2b64b8', '#f9bcd4', '#5f3d9e', '#d1dc8c', '#0d5252', '#f8b173', '#333e45'];
   const donutEl = document.getElementById('cat-donut');
   const legendEl = document.getElementById('cat-legend');
   const anEmpty = document.getElementById('an-empty');
@@ -399,7 +401,7 @@
       seg.setAttribute('r', '15.9155');
       seg.setAttribute('fill', 'none');
       seg.setAttribute('stroke', PALETTE[i % PALETTE.length]);
-      seg.setAttribute('stroke-width', '5.5');
+      seg.setAttribute('stroke-width', '6');
       seg.setAttribute('stroke-dasharray', pct + ' ' + (100 - pct));
       seg.setAttribute('stroke-dashoffset', String(25 - cum));
       donutEl.appendChild(seg);
@@ -593,6 +595,143 @@
     for (const e of expenses) rows.push([e.date, e.type, e.category, e.desc, e.amount.toFixed(2)]);
     const csv = '\uFEFF' + rows.map((r) => r.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
     downloadFile('karcha.csv', csv, 'text/csv');
+  });
+
+  /* ---------- Excel (.xls) export & import ---------- */
+
+  const excelCols = ['Date', 'Type', 'Category', 'Description', 'Amount'];
+
+  function rowsToExcelHtml(rows) {
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const head = excelCols.map((h) => '<th style="background:#22332c;color:#fffefb;padding:6px 12px;text-align:left">' + h + '</th>').join('');
+    const body = rows
+      .map((r) => '<tr>' + r.map((v) => '<td style="padding:4px 12px">' + esc(v) + '</td>').join('') + '</tr>')
+      .join('');
+    return (
+      '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">' +
+      '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>' +
+      '<x:Name>Karcha</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>' +
+      '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->' +
+      '</head><body><table border="1" cellspacing="0">' + head + body + '</table></body></html>'
+    );
+  }
+
+  document.getElementById('export-excel').addEventListener('click', () => {
+    const rows = expenses.map((e) => [e.date, e.type, e.category, e.desc, e.amount.toFixed(2)]);
+    downloadFile('karcha.xls', rowsToExcelHtml(rows), 'application/vnd.ms-excel');
+  });
+
+  function normalizeDateCell(v) {
+    // Accepts 12/31/2026, 31/12/2026, 2026-12-31 or Excel serial numbers.
+    const s = String(v || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if (m) {
+      const a = +m[1], b = +m[2], y = +m[3];
+      return y + '-' + String(a > 12 ? b : a).padStart(2, '0') + '-' + String(a > 12 ? a : b).padStart(2, '0');
+    }
+    if (/^\d{5}(\.\d+)?$/.test(s)) {
+      const d = new Date(Math.round((Number(s) - 25569) * 86400000));
+      return d.toISOString().slice(0, 10);
+    }
+    const d = new Date(s);
+    return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  }
+
+  function applyImportedRows(rows, sourceName) {
+    const clean = rows
+      .map((r) => {
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : normalizeDateCell(r.date);
+        return {
+          id: uid(),
+          desc: String(r.desc || '').slice(0, 80),
+          amount: Number(r.amount) > 0 ? Number(r.amount) : 0,
+          date: date || todayISO(),
+          type: r.type === 'income' ? 'income' : 'expense',
+          category: CATEGORIES[r.category] ? r.category : 'Other'
+        };
+      })
+      .filter((e) => e.desc && e.amount > 0);
+    if (!clean.length) {
+      alert('Import failed: no valid rows found in ' + sourceName + ' (expected columns: Date, Type, Category, Description, Amount).');
+      return;
+    }
+    if (!confirm('Replace current data with ' + clean.length + ' entries from ' + sourceName + '?')) return;
+    expenses = clean;
+    expenses.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    save();
+    render();
+  }
+
+  /* ---------- Excel (cont) ---------- */
+
+  function parseCsv(text) {
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) return [];
+    const split = (line) => {
+      const out = [];
+      let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (q) {
+          if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+          else if (ch === '"') q = false;
+          else cur += ch;
+        } else if (ch === '"') q = true;
+        else if (ch === ',') { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out;
+    };
+    return rowsFromTable(lines.map(split));
+  }
+
+  function parseXlsHtml(text) {
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return [];
+    const trs = Array.from(table.querySelectorAll('tr'));
+    return rowsFromTable(trs.map((tr) => Array.from(tr.querySelectorAll('th,td')).map((td) => td.textContent.trim())));
+  }
+
+  function rowsFromTable(rows) {
+    if (!rows.length) return [];
+    const header = rows[0].map((h) => String(h).trim().toLowerCase());
+    const idx = (names) => header.findIndex((h) => names.includes(h));
+    const iD = idx(['date']), iT = idx(['type']), iC = idx(['category']), iDesc = idx(['description', 'desc']), iA = idx(['amount']);
+    if (iDesc === -1 || iA === -1) return [];
+    return rows.slice(1).map((c) => ({
+      date: iD > -1 ? c[iD] : '',
+      type: iT > -1 ? c[iT] : '',
+      category: iC > -1 ? c[iC] : '',
+      desc: iDesc > -1 ? c[iDesc] : '',
+      amount: iA > -1 ? c[iA] : ''
+    }));
+  }
+
+  const excelInput = document.getElementById('import-excel');
+  document.getElementById('import-excel-btn').addEventListener('click', () => excelInput.click());
+  excelInput.addEventListener('change', () => {
+    const file = excelInput.files && excelInput.files[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xlsx')) {
+      alert('Modern .xlsx files need extra libraries. Please re-save the file as "CSV UTF-8" or "Excel 97-2003 (.xls)" and import again.');
+      excelInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const rows = name.endsWith('.csv') ? parseCsv(String(reader.result)) : parseXlsHtml(String(reader.result));
+        applyImportedRows(rows, file.name);
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+      excelInput.value = '';
+    };
+    reader.readAsText(file);
   });
 
   document.getElementById('wipe-data').addEventListener('click', clearAll);

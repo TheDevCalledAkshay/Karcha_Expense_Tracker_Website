@@ -131,8 +131,8 @@
     form.reset();
     setCategory(DEFAULT_CATEGORY.expense);
     dateInput.value = todayISO();
-    submitLabel.textContent = 'Add Expense';
-    formTitle.textContent = 'Add Expense';
+    submitLabel.textContent = 'Add Transaction';
+    formTitle.textContent = 'Add Transaction';
   }
 
   function setType(type) {
